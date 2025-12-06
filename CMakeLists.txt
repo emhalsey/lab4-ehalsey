@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.0)
-project(lab1-ehalsey C)
+project(lab4-ehalsey C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(lab1-ehalsey lab1-ehalsey.c)
+add_executable(lab4-ehalsey lab4-ehalsey.c)
