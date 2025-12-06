@@ -3,15 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* setting user ID to something new:
- * https://dev.to/namantam1/ways-to-get-and-set-environment-variables-in-c-200m
- * https://www.ibm.com/docs/en/zos/2.4.0?topic=functions-setenv-add-delete-change-environment-variables
- *
- * used these for decimal to binary conversion:
- * https://mathmonks.com/number-system/decimal-to-binary
- * https://www.eventbrite.com/cc/upskill-series-4507973
- */
-
 void error() {
     printf("[Error] Oopsie daisies! Please enter the command correctly.\n");
 }
