@@ -1,6 +1,6 @@
 # lab4-ehalsey
 
-## Emma Halsey | CSC 322-HY2 Fall 2025 | 806305540
+## Emma Halsey | Unix Shell Lab | CSC 322-HY2 Fall 2025
 
 Make sure to type your commands correctly, such as `d2b(100)` or `enc(Rap Monster)`. Otherwise, the program will not work as expected.
 
