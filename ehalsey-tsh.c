@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
-    if builtin_cmd(cmdline) else /*fork*/;
+    if builtin_cmd(cmdline) else /*fork and run in child*/;
 
     /*if job in foreground*/ waitfg(/*what is the PID????*/);
 
@@ -281,7 +281,7 @@ int builtin_cmd(char **argv)
 
         // "jobs" - lists all background jobs
         case 4:
-            
+            listjobs(/*what do i put here??????*/);
             return 1;
 
         default:
@@ -302,7 +302,7 @@ void do_bgfg(char **argv)
     ListOfCmds[0] = "fg";
     ListOfCmds[1] = "bg";
 
-    // Check to see if the user input matches a built-in command.
+    // Check to see if the command starts with fg or bg.
     for (i = 0; i < nrOfCmds; i++) {
         if (strcmp(argv[0], ListOfCmds[i]) == 0) {
             switchOwnArg += 1;
@@ -310,42 +310,34 @@ void do_bgfg(char **argv)
         }
     }
 
-    // Restart the job by sending it a SIGCONT signal
-
-
-
-    // Determines if job is run in foreground or background
+    // If it does, determine if job is run in foreground or background
     switch (switchOwnArg) {
         
-        // "quit" - terminates the shell
+        // "fg" - job is running in foreground
         case 1:
-            printf("\nGoodbye...\n");
-            exit(0);
+            
+            return 1;
         
-        /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
-         * and then runs it in the foreground.
-         * The <job> argument can be either a PID or a JID.
-         */
+        // "bg" - job is running in background
         case 2:
-            do_bgfg(argv);  // continues with the next steps
-            return 1;
-
-        /* "bg <job>" - restarts <job> by sending it a SIGCONT signal,
-         * and then runs it in the background.
-         * The <job> argument can be either a PID or a JID.
-         */
-        case 3:
-            do_bgfg(argv);  // continues with the next steps
-            return 1;
-
-        // "jobs" - lists all background jobs
-        case 4:
-            listjobs(); // need to figure out how to fill in the method
+            
             return 1;
 
         default:
             break;
     }
+
+    // Restart the job by sending it a SIGCONT signal
+
+    /* try getting the job by its PID */
+    getjobpid(argv[1]);
+
+    /* if the PID doesn't work, try the JID */
+    getjobjid(argv[1]);
+
+    /* otherwise job doesn't exist */
+    printf("\nThat job doesn't seem to exist. Please enter an existing PID or JID and try again.\n")
+    return 0;
 }
 
 /* 
