@@ -1,7 +1,7 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * Emma Halsey <ehalsey@oswego.edu>
+ * 
  */
 #include <stdio.h>
 #include <stdlib.h>
