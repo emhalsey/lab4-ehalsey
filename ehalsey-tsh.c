@@ -239,54 +239,31 @@ int parseline(const char *cmdline, char **argv)
  */
 int builtin_cmd(char **argv) 
 {
-    int nrOfCmds = 4, i, switchOwnArg = 0;
-    char* ListOfCmds[nrOfCmds];
-
-    /* An array of all the built-in commands that a user can refer to. */
-    ListOfCmds[0] = "quit";
-    ListOfCmds[1] = "fg";
-    ListOfCmds[2] = "bg";
-    ListOfCmds[3] = "jobs";
-
-    // Check to see if the user input matches a built-in command.
-    for (i = 0; i < nrOfCmds; i++) {
-        if (strcmp(argv[0], ListOfCmds[i]) == 0) {
-            switchOwnArg += 1;
-            break;
-        }
+    if (argv[0] == NULL) return 0;
+        
+    // "quit" - terminates the shell
+    if (!strcmp(argv[0], "quit")) {
+        exit(0); /* no extra prints */
     }
 
-    // Depending on the different commands a user enters, do something.
-    switch (switchOwnArg) {
-        
-        // "quit" - terminates the shell
-        case 1:
-            exit(0);
-        
-        /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
-         * and then runs it in the foreground.
-         * The <job> argument can be either a PID or a JID.
-         */
-        case 2:
-            do_bgfg(argv);  // uses a specific method
-            return 1;
-
-        /* "bg <job>" - restarts <job> by sending it a SIGCONT signal,
-         * and then runs it in the background.
-         * The <job> argument can be either a PID or a JID.
-         */
-        case 3:
-            do_bgfg(argv);  // uses a specific method
-            return 1;
-
-        // "jobs" - lists all background jobs
-        case 4:
-            listjobs(jobs);
-            return 1;
-
-        default:
-            break;
+    /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
+     * and then runs it in the foreground.
+     *
+     * "bg <job>" - does the same as "fg", but runs the job in the background.
+     *
+     * The <job> argument can be either a PID or a JID.
+     */
+    if (!strcmp(argv[0], "bg") || !strcmp(argv[0], "fg")) {
+        do_bgfg(argv);
+        return 1;
     }
+
+    // "jobs" - returns a list of all current jobs
+    if (!strcmp(argv[0], "jobs")) {
+        listjobs(jobs);
+        return 1;
+    }
+
 
     return 0;     /* not a builtin command */
 }
