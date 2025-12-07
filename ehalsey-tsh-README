@@ -60,6 +60,13 @@ COMPILING AND RUNNING THIS PROGRAM:
     ...
     make test16
 
+    i) If there are no error messages, the test has passed.
+    ii) You can check for sure by typing "echo $?". If it prints 0, it passed.
+    iii) Compare the output to the reference shell by typing "make rtest##".
+        make rtest01
+        make rtest02
+        ...
+        make rtest16
 -------------------------------------------------------------------------
 
 Files:
