@@ -1,7 +1,7 @@
 /* 
  * tsh - A tiny shell program with job control
  * 
- * 
+ * Emma Halsey <ehalsey@oswego.edu>
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -165,7 +165,8 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
-    if builtin_cmd(cmdline) else /*fork and run in child*/;
+    argv = parseline(cmdline, argv);
+    if builtin_cmd(argv) else /*fork and run in child*/;
 
     /*if job in foreground*/ waitfg(/*what is the PID????*/);
 
@@ -260,7 +261,6 @@ int builtin_cmd(char **argv)
         
         // "quit" - terminates the shell
         case 1:
-            printf("\nGoodbye...\n");
             exit(0);
         
         /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
@@ -281,7 +281,7 @@ int builtin_cmd(char **argv)
 
         // "jobs" - lists all background jobs
         case 4:
-            listjobs(/*what do i put here??????*/);
+            listjobs(jobs);
             return 1;
 
         default:
@@ -296,48 +296,80 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-    int nrOfCmds = 2, i, switchOwnArg = 0;
-    char* ListOfCmds[nrOfCmds];
+    struct job_t *job = NULL;
+    char *arg = argv[1];
+    pid_t pid = 0;
+    int jid = 0;
 
-    ListOfCmds[0] = "fg";
-    ListOfCmds[1] = "bg";
+    /* Required to have arguments PID or JID */
+    if (arg == NULL) {
+        fprintf(stdout, "%s command requires PID or %%jobid argument\n",argv[0]);
+        return;
+    }
 
-    // Check to see if the command starts with fg or bg.
-    for (i = 0; i < nrOfCmds; i++) {
-        if (strcmp(argv[0], ListOfCmds[i]) == 0) {
-            switchOwnArg += 1;
-            break;
+    /* Parse %JID or PID */
+    if (arg[0] == '%') {
+
+        char *end = NULL;
+        errno = 0;
+        long j = strtol(arg + 1, &end, 10);
+
+        // error checking
+        if (errno != 0 || end == arg + 1 || *end != '\0' || j <= 0 || j > INT_MAX) {
+            fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
+            return;
+        }
+
+        jid = (int)j;
+        job = getjobjid(jobs, jid);
+
+        // cannot restart null job
+        if (job == NULL) {
+            fprintf(stdout, "%%%d: No such job\n", jid);
+            return;
+        }
+
+        pid = job->pid;
+
+    } else {
+
+        char *end = NULL;
+        errno = 0;
+        long p = strtol(arg, &end, 10);
+
+        // error checking
+        if (errno != 0 || end == arg || *end != '\0' || p <= 0 || p > INT_MAX) {
+            fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
+            return;
+        }
+
+        pid = (pid_t)p;
+        job = getjobpid(jobs, pid);
+
+        // cannot restart null job
+        if (job == NULL) {
+            fprintf(stdout, "(%d): No such process\n", pid);
+            return;
         }
     }
 
-    // If it does, determine if job is run in foreground or background
-    switch (switchOwnArg) {
-        
-        // "fg" - job is running in foreground
-        case 1:
-            
-            return 1;
-        
-        // "bg" - job is running in background
-        case 2:
-            
-            return 1;
-
-        default:
-            break;
+    /* Send SIGCONT to the entire process group of the job */
+    if (kill(-pid, SIGCONT) < 0) {
+        unix_error("kill (SIGCONT) error");
+        return;
     }
 
-    // Restart the job by sending it a SIGCONT signal
-
-    /* try getting the job by its PID */
-    getjobpid(argv[1]);
-
-    /* if the PID doesn't work, try the JID */
-    getjobjid(argv[1]);
-
-    /* otherwise job doesn't exist */
-    printf("\nThat job doesn't seem to exist. Please enter an existing PID or JID and try again.\n")
-    return 0;
+    /* Determine whether fg or bg job */
+    if (!strcmp(argv[0], "fg")) {
+        job->state = FG;
+        // Bring job to foreground and wait until it leaves FG
+        waitfg(pid);
+    } else { 
+        // bg is the only other option since this is called in builtin_cmd and already verified
+        job->state = BG;
+        // Print [jid] (pid) cmdline
+        printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
+    }
 }
 
 /* 
