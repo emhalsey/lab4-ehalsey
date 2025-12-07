@@ -2,6 +2,66 @@
 CS:APP Shell Lab
 ################
 
+COMPILING AND RUNNING THIS PROGRAM:
+
+1) Connect to pi.cs.oswego.edu
+
+2) Ensure all the files (listed below) are in the same folder, and your current directory is set to that folder.
+
+  i) You can check your current directory by typing "pwd"
+
+3) Check sdriver.pl permissions
+
+  i) Make sure it exists and is executable:
+      ls -l sdriver.pl
+
+      My permissions initially looked like this: -rw-r--r--
+      Only read/write for owner, read for others, and no execution.
+
+  ii) Run this to make it executable:
+      chmod +x sdriver.pl
+
+      Permissions should look like this: -rwxr-xr-x
+
+4) Compile the program AND the helper binaries by writing the following:
+
+  MAIN
+  gcc -Wall -Wextra -O2 -o tsh ehalsey-tsh.c
+
+  HELPERS
+  gcc -Wall -Wextra -O2 -o myspin   myspin.c
+  gcc -Wall -Wextra -O2 -o mysplit  mysplit.c
+  gcc -Wall -Wextra -O2 -o mystop   mystop.c
+  gcc -Wall -Wextra -O2 -o myint    myint.c
+
+  i) Compilation explanation:
+      gcc: The compiler used on pi.cs.oswego.edu
+      -Wall: enables common warnings, helpful for debugging
+      -Wextra: enables additional warnings beyond -Wall like unused function parameters and signed vs. unsigned comparisons
+      -O2: level 2 optimization, often used in production. Balances between speed and compile time
+      -o tsh: the output file name. Called tsh since this is what the test cases call it.
+
+5) Check after compiling:
+
+  i) Make sure they exist and are executable:
+        ls -l tsh myspin mysplit mystop myint
+  
+        Permissions should look like this for all of them: -rwxr-xr-x
+  
+    ii) If not, run this to make them executable:
+        chmod +x tsh myspin mysplit mystop myint
+  
+        This will ensure they are all executable.
+
+6) Run all the tests (1-16) by writing make test##
+
+    make test01
+    make test02
+    ...
+    make test16
+
+-------------------------------------------------------------------------
+
 Files:
 
 Makefile	# Compiles your shell program and runs the tests
