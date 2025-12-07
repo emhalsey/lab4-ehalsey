@@ -165,6 +165,10 @@ int main(int argc, char **argv)
 */
 void eval(char *cmdline) 
 {
+    if builtin_cmd(cmdline) else /*fork*/;
+
+    /*if job in foreground*/ waitfg(/*what is the PID????*/);
+
     return;
 }
 
@@ -228,9 +232,62 @@ int parseline(const char *cmdline, char **argv)
 /* 
  * builtin_cmd - If the user has typed a built-in command then execute
  *    it immediately.  
+ *
+ * Skeleton for code referenced from GeeksForGeeks:
+ * https://www.geeksforgeeks.org/c/making-linux-shell-c/
  */
 int builtin_cmd(char **argv) 
 {
+    int nrOfCmds = 4, i, switchOwnArg = 0;
+    char* ListOfCmds[nrOfCmds];
+
+    /* An array of all the built-in commands that a user can refer to. */
+    ListOfCmds[0] = "quit";
+    ListOfCmds[1] = "fg";
+    ListOfCmds[2] = "bg";
+    ListOfCmds[3] = "jobs";
+
+    // Check to see if the user input matches a built-in command.
+    for (i = 0; i < nrOfCmds; i++) {
+        if (strcmp(argv[0], ListOfCmds[i]) == 0) {
+            switchOwnArg += 1;
+            break;
+        }
+    }
+
+    // Depending on the different commands a user enters, do something.
+    switch (switchOwnArg) {
+        
+        // "quit" - terminates the shell
+        case 1:
+            printf("\nGoodbye...\n");
+            exit(0);
+        
+        /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
+         * and then runs it in the foreground.
+         * The <job> argument can be either a PID or a JID.
+         */
+        case 2:
+            do_bgfg(argv);  // uses a specific method
+            return 1;
+
+        /* "bg <job>" - restarts <job> by sending it a SIGCONT signal,
+         * and then runs it in the background.
+         * The <job> argument can be either a PID or a JID.
+         */
+        case 3:
+            do_bgfg(argv);  // uses a specific method
+            return 1;
+
+        // "jobs" - lists all background jobs
+        case 4:
+            
+            return 1;
+
+        default:
+            break;
+    }
+
     return 0;     /* not a builtin command */
 }
 
@@ -239,7 +296,56 @@ int builtin_cmd(char **argv)
  */
 void do_bgfg(char **argv) 
 {
-    return;
+    int nrOfCmds = 2, i, switchOwnArg = 0;
+    char* ListOfCmds[nrOfCmds];
+
+    ListOfCmds[0] = "fg";
+    ListOfCmds[1] = "bg";
+
+    // Check to see if the user input matches a built-in command.
+    for (i = 0; i < nrOfCmds; i++) {
+        if (strcmp(argv[0], ListOfCmds[i]) == 0) {
+            switchOwnArg += 1;
+            break;
+        }
+    }
+
+    // Restart the job by sending it a SIGCONT signal
+
+
+
+    // Determines if job is run in foreground or background
+    switch (switchOwnArg) {
+        
+        // "quit" - terminates the shell
+        case 1:
+            printf("\nGoodbye...\n");
+            exit(0);
+        
+        /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
+         * and then runs it in the foreground.
+         * The <job> argument can be either a PID or a JID.
+         */
+        case 2:
+            do_bgfg(argv);  // continues with the next steps
+            return 1;
+
+        /* "bg <job>" - restarts <job> by sending it a SIGCONT signal,
+         * and then runs it in the background.
+         * The <job> argument can be either a PID or a JID.
+         */
+        case 3:
+            do_bgfg(argv);  // continues with the next steps
+            return 1;
+
+        // "jobs" - lists all background jobs
+        case 4:
+            listjobs(); // need to figure out how to fill in the method
+            return 1;
+
+        default:
+            break;
+    }
 }
 
 /* 
