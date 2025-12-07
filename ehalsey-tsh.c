@@ -163,14 +163,70 @@ int main(int argc, char **argv)
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
-void eval(char *cmdline) 
+
+void eval(char *cmdline)
 {
-    argv = parseline(cmdline, argv);
-    if builtin_cmd(argv) else /*fork and run in child*/;
+    char *argv[MAXARGS];      // Argument list
+    int bg;                   // Should the job run in bg or fg?
+    pid_t pid;                // Child PID
+    sigset_t mask_chld, prev; // Block SIGCHLD to avoid race
 
-    /*if job in foreground*/ waitfg(/*what is the PID????*/);
+    // Parse the command line into argv and detect background flag
+    bg = parseline(cmdline, argv);
+    if (argv[0] == NULL) {
+        return; // Ignore empty lines
+    }
 
-    return;
+    // Builtins: quit/jobs/bg/fg handled immediately
+    if (builtin_cmd(argv)) {
+        return;
+    }
+
+    // Block SIGCHLD before fork to avoid race (child exits before addjob)
+    sigemptyset(&mask_chld);
+    sigaddset(&mask_chld, SIGCHLD);
+    if (sigprocmask(SIG_BLOCK, &mask_chld, &prev) < 0)
+        unix_error("sigprocmask block error");
+
+    if ((pid = fork()) < 0) {
+        unix_error("fork error");
+    }
+
+    if (pid == 0) { // run in child
+        // Put child in a new process group (PGID = child's PID)
+        if (setpgid(0, 0) < 0)
+            unix_error("setpgid error");
+
+        // Unblock SIGCHLD in the child before exec
+        if (sigprocmask(SIG_SETMASK, &prev, NULL) < 0)
+            unix_error("sigprocmask unblock (child) error");
+
+        // Load and run the program
+        if (execve(argv[0], argv, environ) < 0) {
+            fprintf(stdout, "%s: Command not found\n", argv[0]);
+            exit(0);
+        }
+    }
+
+    // Parent: add the job with correct state while SIGCHLD is blocked
+    if (!addjob(jobs, pid, bg ? BG : FG, cmdline)) {
+        // If addjob fails, restore mask and bail
+        if (sigprocmask(SIG_SETMASK, &prev, NULL) < 0)
+            unix_error("sigprocmask restore error");
+        return;
+    }
+
+    // Restore the signal mask (unblock SIGCHLD)
+    if (sigprocmask(SIG_SETMASK, &prev, NULL) < 0)
+        unix_error("sigprocmask restore error");
+
+    // If foreground, wait; if background, print the job line
+    if (!bg) {
+        waitfg(pid);
+    } else {
+        int jid = pid2jid(pid);
+        printf("[%d] (%d) %s", jid, pid, cmdline);
+    }
 }
 
 /* 
@@ -182,18 +238,18 @@ void eval(char *cmdline)
  */
 int parseline(const char *cmdline, char **argv) 
 {
-    static char array[MAXLINE]; /* holds local copy of command line */
-    char *buf = array;          /* ptr that traverses command line */
-    char *delim;                /* points to first space delimiter */
-    int argc;                   /* number of args */
-    int bg;                     /* background job? */
+    static char array[MAXLINE]; // holds local copy of command line
+    char *buf = array;          // ptr that traverses command line
+    char *delim;                // points to first space delimiter
+    int argc;                   // number of args
+    int bg;                     // background job?
 
     strcpy(buf, cmdline);
-    buf[strlen(buf)-1] = ' ';  /* replace trailing '\n' with space */
-    while (*buf && (*buf == ' ')) /* ignore leading spaces */
+    buf[strlen(buf)-1] = ' ';  // replace trailing '\n' with space
+    while (*buf && (*buf == ' ')) // ignore leading spaces
 	buf++;
 
-    /* Build the argv list */
+    // Build the argv list
     argc = 0;
     if (*buf == '\'') {
 	buf++;
@@ -207,7 +263,7 @@ int parseline(const char *cmdline, char **argv)
 	argv[argc++] = buf;
 	*delim = '\0';
 	buf = delim + 1;
-	while (*buf && (*buf == ' ')) /* ignore spaces */
+	while (*buf && (*buf == ' ')) // ignore spaces
 	       buf++;
 
 	if (*buf == '\'') {
@@ -220,10 +276,10 @@ int parseline(const char *cmdline, char **argv)
     }
     argv[argc] = NULL;
     
-    if (argc == 0)  /* ignore blank line */
+    if (argc == 0)  // ignore blank line
 	return 1;
 
-    /* should the job run in the background? */
+    // determine whether the job should run in the background
     if ((bg = (*argv[argc-1] == '&')) != 0) {
 	argv[--argc] = NULL;
     }
@@ -233,9 +289,6 @@ int parseline(const char *cmdline, char **argv)
 /* 
  * builtin_cmd - If the user has typed a built-in command then execute
  *    it immediately.  
- *
- * Skeleton for code referenced from GeeksForGeeks:
- * https://www.geeksforgeeks.org/c/making-linux-shell-c/
  */
 int builtin_cmd(char **argv) 
 {
@@ -243,7 +296,7 @@ int builtin_cmd(char **argv)
         
     // "quit" - terminates the shell
     if (!strcmp(argv[0], "quit")) {
-        exit(0); /* no extra prints */
+        exit(0);
     }
 
     /* "fg <job>" - restarts <job> by sending it a SIGCONT signal,
@@ -263,7 +316,6 @@ int builtin_cmd(char **argv)
         listjobs(jobs);
         return 1;
     }
-
 
     return 0;     /* not a builtin command */
 }
@@ -285,6 +337,8 @@ void do_bgfg(char **argv)
     }
 
     /* Parse %JID or PID */
+
+    //JID
     if (arg[0] == '%') {
 
         char *end = NULL;
@@ -292,7 +346,7 @@ void do_bgfg(char **argv)
         long j = strtol(arg + 1, &end, 10);
 
         // error checking
-        if (errno != 0 || end == arg + 1 || *end != '\0' || j <= 0 || j > INT_MAX) {
+        if (errno != 0 || end == arg + 1 || *end != '\0' || j <= 0 || j > MAXJOBS) {
             fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
@@ -307,15 +361,17 @@ void do_bgfg(char **argv)
         }
 
         pid = job->pid;
+    } 
 
-    } else {
+    // PID
+    else {
 
         char *end = NULL;
         errno = 0;
         long p = strtol(arg, &end, 10);
 
         // error checking
-        if (errno != 0 || end == arg || *end != '\0' || p <= 0 || p > INT_MAX) {
+        if (errno != 0 || end == arg || *end != '\0' || p <= 0 || p > MAXJOBS) {
             fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
@@ -330,13 +386,13 @@ void do_bgfg(char **argv)
         }
     }
 
-    /* Send SIGCONT to the entire process group of the job */
+    // Send SIGCONT to the entire process group of the job
     if (kill(-pid, SIGCONT) < 0) {
         unix_error("kill (SIGCONT) error");
         return;
     }
 
-    /* Determine whether fg or bg job */
+    // Determine whether fg or bg job
     if (!strcmp(argv[0], "fg")) {
         job->state = FG;
         // Bring job to foreground and wait until it leaves FG
@@ -344,6 +400,7 @@ void do_bgfg(char **argv)
     } else { 
         // bg is the only other option since this is called in builtin_cmd and already verified
         job->state = BG;
+
         // Print [jid] (pid) cmdline
         printf("[%d] (%d) %s", job->jid, job->pid, job->cmdline);
     }
@@ -354,6 +411,10 @@ void do_bgfg(char **argv)
  */
 void waitfg(pid_t pid)
 {
+    // Busy loop around sleep
+    while (pid == fgpid(jobs)) {
+        sleep(1);
+    }
     return;
 }
 
@@ -368,9 +429,42 @@ void waitfg(pid_t pid)
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.  
  */
-void sigchld_handler(int sig) 
+
+void sigchld_handler(int sig)
 {
-    return;
+    int olderrno = errno;
+    int status = 0;
+    pid_t pid = waitpid(-1, &status, WNOHANG | WUNTRACED);
+
+    if (pid > 0) {
+        struct job_t *job = getjobpid(jobs, pid);
+
+        if (job == NULL) {
+            // Already deleted or not found; nothing to do
+        } 
+        
+        // Normal exit: remove job
+        else if (WIFEXITED(status)) {
+            deletejob(jobs, pid);
+        } 
+        
+        // Terminated by a signal: print and remove
+        else if (WIFSIGNALED(status)) {
+            int signum = WTERMSIG(status);
+            printf("Job [%d] (%d) terminated by signal %d\n", job->jid, pid, signum);
+            deletejob(jobs, pid);
+        } 
+        
+        // Stopped by a signal: mark ST and print
+        else if (WIFSTOPPED(status)) {
+            int signum = WSTOPSIG(status);
+            job->state = ST;
+            printf("Job [%d] (%d) stopped by signal %d\n", job->jid, pid, signum);
+        }
+    }
+
+    /* If pid == 0 (no state change) or pid < 0 (no children), ignore */
+    errno = olderrno;
 }
 
 /* 
@@ -378,8 +472,15 @@ void sigchld_handler(int sig)
  *    user types ctrl-c at the keyboard.  Catch it and send it along
  *    to the foreground job.  
  */
-void sigint_handler(int sig) 
+void sigint_handler(int sig)
 {
+    pid_t pid = fgpid(jobs);
+    if (pid != 0) {
+        // Send to the foreground process group
+        if (kill(-pid, SIGINT) < 0) {
+            // If kill fails (e.g., no such process group), ignore
+        }
+    }
     return;
 }
 
@@ -388,8 +489,15 @@ void sigint_handler(int sig)
  *     the user types ctrl-z at the keyboard. Catch it and suspend the
  *     foreground job by sending it a SIGTSTP.  
  */
-void sigtstp_handler(int sig) 
+void sigtstp_handler(int sig)
 {
+    pid_t pid = fgpid(jobs);
+    if (pid != 0) {
+        // Send to the foreground process group
+        if (kill(-pid, SIGTSTP) < 0) {
+            // Ignore errors
+        }
+    }
     return;
 }
 
