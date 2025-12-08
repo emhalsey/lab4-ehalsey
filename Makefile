@@ -1,6 +1,6 @@
 # Makefile for the CS:APP Shell Lab
 
-AUTHOR = ehalsey
+TEAM = ehalsey
 VERSION = 1
 HANDINDIR = /afs/cs/academic/class/15213-f02/L5/handin
 DRIVER = ./sdriver.pl
@@ -14,13 +14,13 @@ FILES = $(TSH) ./myspin ./mysplit ./mystop ./myint
 all: $(FILES)
 
 tsh: ehalsey-tsh.c
-    $(CC) $(CFLAGS) -o tsh $(AUTHOR)-tsh.c
+    $(CC) $(CFLAGS) -o tsh ehalsey-tsh.c
 
 ##################
 # Handin your work
 ##################
 handin:
-	cp tsh.c $(HANDINDIR)/$(AUTHOR)-$(VERSION)-tsh.c
+	cp tsh.c $(HANDINDIR)/$(TEAM)-$(VERSION)-tsh.c
 
 
 ##################
