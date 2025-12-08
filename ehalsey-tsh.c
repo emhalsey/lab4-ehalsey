@@ -346,7 +346,12 @@ void do_bgfg(char **argv)
         long j = strtol(arg + 1, &end, 10);
 
         // error checking
-        if (errno != 0 || end == arg + 1 || *end != '\0' || j <= 0 || j > MAXJOBS) {
+        if (j <= 0 || j > MAXJOBS) {
+            fprintf(stdout, "%s: No such process\n", argv[0]);
+            return;
+        }
+
+        if (errno != 0 || end == arg + 1 || *end != '\0') {
             fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
@@ -371,7 +376,12 @@ void do_bgfg(char **argv)
         long p = strtol(arg, &end, 10);
 
         // error checking
-        if (errno != 0 || end == arg || *end != '\0' || p <= 0 || p > MAXJOBS) {
+        if (p <= 0 || p > MAXJOBS) {
+            fprintf(stdout, "%s: No such process\n", argv[0]);
+            return;
+        }
+
+        if (errno != 0 || end == arg || *end != '\0') {
             fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
