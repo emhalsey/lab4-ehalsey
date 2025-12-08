@@ -330,15 +330,15 @@ void do_bgfg(char **argv)
     pid_t pid = 0;
     int jid = 0;
 
-    /* Required to have arguments PID or JID */
+    // Required to have arguments PID or JID
     if (arg == NULL) {
         fprintf(stdout, "%s command requires PID or %%jobid argument\n",argv[0]);
         return;
     }
 
-    /* Parse %JID or PID */
+    // Parse %JID or PID
 
-    //JID
+    //JID, starts with %
     if (arg[0] == '%') {
 
         char *end = NULL;
@@ -346,20 +346,17 @@ void do_bgfg(char **argv)
         long j = strtol(arg + 1, &end, 10);
 
         // error checking
-        if (j <= 0 || j > MAXJOBS) {
-            fprintf(stdout, "%s: No such process\n", argv[0]);
-            return;
-        }
 
-        if (errno != 0 || end == arg + 1 || *end != '\0') {
-            fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
+        // incorrect arg formatting
+        if (errno != 0 || end == arg + 1 || *end != '\0' || j <= 0) {
+            printf("%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
 
         jid = (int)j;
         job = getjobjid(jobs, jid);
 
-        // cannot restart null job
+        // numeric but not found
         if (job == NULL) {
             fprintf(stdout, "%%%d: No such job\n", jid);
             return;
@@ -376,24 +373,22 @@ void do_bgfg(char **argv)
         long p = strtol(arg, &end, 10);
 
         // error checking
-        if (p <= 0 || p > MAXJOBS) {
-            fprintf(stdout, "%s: No such process\n", argv[0]);
-            return;
-        }
-
-        if (errno != 0 || end == arg || *end != '\0') {
-            fprintf(stdout, "%s: argument must be a PID or %%jobid\n", argv[0]);
+        
+        // incorrect arg formatting
+        if (errno != 0 || end == arg || *end != '\0' || p <= 0) {
+            printf("%s: argument must be a PID or %%jobid\n", argv[0]);
             return;
         }
 
         pid = (pid_t)p;
         job = getjobpid(jobs, pid);
 
-        // cannot restart null job
+        // numeric but not found
         if (job == NULL) {
-            fprintf(stdout, "(%d): No such process\n", pid);
+            printf("(%d): No such process\n", (int)pid);
             return;
         }
+
     }
 
     // Send SIGCONT to the entire process group of the job
