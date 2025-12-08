@@ -10,50 +10,49 @@ COMPILING AND RUNNING THIS PROGRAM:
 
   i) You can check your current directory by typing "pwd"
 
-3) Check sdriver.pl permissions
-
-  i) Make sure it exists and is executable:
-      ls -l sdriver.pl
-
-      My permissions initially looked like this: -rw-r--r--
-      Only read/write for owner, read for others, and no execution.
-
-  ii) Run this to make it executable:
-      chmod +x sdriver.pl
-
-      Permissions should look like this: -rwxr-xr-x
-
-4) Compile the program AND the helper binaries by writing the following:
+3) Compile the program and the helpers by writing the following:
 
   MAIN
-  gcc -Wall -Wextra -O2 -o tsh ehalsey-tsh.c
+  gcc -Wall -O2 -o tsh ehalsey-tsh.c
 
   HELPERS
-  gcc -Wall -Wextra -O2 -o myspin   myspin.c
-  gcc -Wall -Wextra -O2 -o mysplit  mysplit.c
-  gcc -Wall -Wextra -O2 -o mystop   mystop.c
-  gcc -Wall -Wextra -O2 -o myint    myint.c
+  gcc -Wall -O2 -o myspin   myspin.c
+  gcc -Wall -O2 -o mysplit  mysplit.c
+  gcc -Wall -O2 -o mystop   mystop.c
+  gcc -Wall -O2 -o myint    myint.c
 
   i) Compilation explanation:
       gcc: The compiler used on pi.cs.oswego.edu
       -Wall: enables common warnings, helpful for debugging
-      -Wextra: enables additional warnings beyond -Wall like unused function parameters and signed vs. unsigned comparisons
       -O2: level 2 optimization, often used in production. Balances between speed and compile time
-      -o tsh: the output file name. Called tsh since this is what the test cases call it.
+      -o _____: the output file name. Called "ehalsey-tsh.c" "tsh" since this is what the test cases refer to it as.
 
-5) Check after compiling:
+4) Check permissions for everything
 
-  i) Make sure they exist and are executable:
-        ls -l tsh myspin mysplit mystop myint
-  
-        Permissions should look like this for all of them: -rwxr-xr-x
-  
-    ii) If not, run this to make them executable:
-        chmod +x tsh myspin mysplit mystop myint
-  
-        This will ensure they are all executable.
+  i) Make sure all the needed components exist and check permissions executable:
+      ls -l sdriver.pl tsh myspin mysplit mystop myint tshref
 
-6) Run all the tests (1-16) by writing make test##
+      COMPONENTS
+      a) sdriver.pl: driver needed to run shell
+      b) tsh: my shell
+      c) myspin mysplit mystop myint: the helper binaries
+      d) tshref: the reference shell
+
+      My permissions initially looked like this for a) and d): -rw-r--r--
+      Only read/write for owner, read for others, and no execution.
+
+      The permissions for b) and c) were fine since I was the one that compiled them.
+      In the rare case that the permissions look like the above, follow the same steps below for b) and c) as well.
+
+  ii) Run this to make a) and d) executable:
+      chmod +x sdriver.pl tshref
+
+  iii) Check permissions again to make sure
+      ls -l sdriver.pl tsh myspin mysplit mystop myint tshref
+
+      Permissions should now look like this for everything: -rwxr-xr-x
+
+5) Run all the tests (1-16) by writing make test##
 
     make test01
     make test02
@@ -63,10 +62,15 @@ COMPILING AND RUNNING THIS PROGRAM:
     i) If there are no error messages, the test has passed.
     ii) You can check for sure by typing "echo $?". If it prints 0, it passed.
     iii) Compare the output to the reference shell by typing "make rtest##".
+
         make rtest01
         make rtest02
         ...
         make rtest16
+
+    iv) To see detailed test execution, add -v:
+        ./sdriver.pl -t trace05.txt -s ./tsh -a "-p" -v
+
 -------------------------------------------------------------------------
 
 Files:
