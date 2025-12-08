@@ -12,6 +12,10 @@ COMPILING AND RUNNING THIS PROGRAM:
 
 3) Compile the program and the helpers by writing the following:
 
+  make all
+
+  OR you can write them out manually. But "make all" is easier since it is defined in the make file.
+
   MAIN
   gcc -Wall -O2 -o tsh ehalsey-tsh.c
 
@@ -52,7 +56,7 @@ COMPILING AND RUNNING THIS PROGRAM:
 
       Permissions should now look like this for everything: -rwxr-xr-x
 
-5) Run all the tests (1-16) by writing make test##
+5) Run all the tests (1-16) by writing "make test##" or "make testall"
 
     make test01
     make test02
@@ -61,7 +65,7 @@ COMPILING AND RUNNING THIS PROGRAM:
 
     i) If there are no error messages, the test has passed.
     ii) You can check for sure by typing "echo $?". If it prints 0, it passed.
-    iii) Compare the output to the reference shell by typing "make rtest##".
+    iii) Compare the output to the reference shell by typing "make rtest##" or "make rtestall".
 
         make rtest01
         make rtest02
