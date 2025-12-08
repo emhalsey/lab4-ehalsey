@@ -14,7 +14,7 @@ FILES = $(TSH) ./myspin ./mysplit ./mystop ./myint
 all: $(FILES)
 
 tsh: ehalsey-tsh.c
-    $(CC) $(CFLAGS) -o tsh ehalsey-tsh.c
+	$(CC) $(CFLAGS) -o tsh ehalsey-tsh.c
 
 ##################
 # Handin your work
